@@ -95,7 +95,7 @@ export async function handleFunctionCommand(answers) {
 
 		if (operation === 'info') {
 			console.log(`Info for ${functionName}`);
-			getFunctionInfo(lambdaService, functionName);
+			getFunctionInfo(lambdaService, functionName, options, poveryConfig);
 			return;
 		}
 
@@ -268,7 +268,7 @@ export async function compileTypescript(functionName) {
 	}
 }
 
-export async function buildFunction(functionName) {
+export async function buildFunction(functionName, poveryConfig) {
 	console.log(chalk.green(`Building ${functionName}`));
 
 	cleanDist(functionName);
@@ -283,10 +283,11 @@ export async function buildFunction(functionName) {
 	return await makeBuildZip(functionName);
 }
 
-export function getFunctionInfo(lambdaService, functionName) {
+export function getFunctionInfo(lambdaService, functionName, {environment}, {deployStrategy}) {
+	const remoteFunctionName = getRemoteFunctionName(deployStrategy, environment, functionName);
 	lambdaService.getFunction(
 		{
-			FunctionName: functionName,
+			FunctionName: remoteFunctionName,
 		},
 		(err, data) => {
 			if (err) {
@@ -298,20 +299,22 @@ export function getFunctionInfo(lambdaService, functionName) {
 	);
 }
 
-export async function updateFunctionCode(functionName, s3BucketKey, environment, deployStrategy) {
+function getRemoteFunctionName(deployStrategy, environment, functionName) {
+	switch (deployStrategy) {
+		case 'STAGE_PREFIX':
+			return `${environment}_${functionName}`;
+		case 'STAGE_ALIAS':
+			return functionName;
+		default:
+			return functionName;
+
+	}
+}
+
+export async function updateFunctionCode(functionName, environment, deployStrategy) {
 	const updateLambdaSpinner = ora(`Updating ${functionName}`).start();
 
-	const remoteFunctionName = (() => {
-		switch(deployStrategy) {
-			case 'STAGE_PREFIX':
-				return `${environment}_${functionName}`;
-			case 'STAGE_ALIAS':
-				return functionName;
-			default:
-				return functionName;
-
-		}
-	})()
+	const remoteFunctionName = getRemoteFunctionName(deployStrategy, environment, functionName);
 
 	const lambdaService = new aws.Lambda({region});
 	await lambdaService
