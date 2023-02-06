@@ -12,7 +12,6 @@ function getPoveryConfig() {
     }
 
     const poveryConf = JSON.parse(fs.readFileSync(poveryJsonPath, 'utf8'));
-    console.log(`poveryConf`, poveryConf)
 
     // project name is the current folder name
     const projectName = process.cwd().split('/').pop();
@@ -53,32 +52,44 @@ function getPoveryConfig() {
     }
 
     const defaultServerlessConf = {
-        "service": projectName,
-        "provider": {
-            "name": "aws",
-            "region": "eu-central-1",
-            "environment": {
+        service: projectName,
+        provider: {
+            name: "aws",
+            region: "eu-central-1",
+            environment: {
                 "NODE_ENV": "development"
             }
         },
-        "custom": {
+        custom: {
             "serverless-offline": {
                 // "useChildProcesses": true,
                 "reloadHandler": true,
             }
         },
-        "package": {
-            "patterns": [
+        package: {
+            patterns: [
                 "lambda/**/index.ts"
             ]
         },
         functions,
-        "plugins": [
+        plugins: [
             "serverless-plugin-typescript",
             "serverless-offline"
         ]
     }
 
+    // check if .envrc file exists
+    const envrcPath = path.resolve(`./.envrc`);
+    // if yes, add all env vars to serverless config
+    if (fs.lstatSync(envrcPath).isFile()) {
+        const envrc = fs.readFileSync(envrcPath, 'utf8');
+        const envVars = envrc.split('\n')
+            .filter((line) => line.startsWith('export '));
+        envVars.forEach((envVar) => {
+            const [key, value] = envVar.split('=');
+            defaultServerlessConf.provider.environment[key.replace('export ', '')] = value;
+        })
+    }
 
     const serverlessConfFile = '.serverless.json';
     fs.writeFileSync(serverlessConfFile, JSON.stringify(defaultServerlessConf, null, 4));

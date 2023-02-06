@@ -204,21 +204,12 @@ export async function installNodeModules(functionName, poveryConfig) {
 			fs.mkdirSync(tempBuildFolderPath);
 		}
 
-		// copy povery.json to temporary build folder
-		// const poveryJsonPath = `./povery.json`;
-		// const tempPoveryJsonPath = `./.tmp/povery.json`;
-		// fs.copyFileSync(poveryJsonPath, tempPoveryJsonPath);
-
 		if (!fs.existsSync(`${tempBuildFolderPath}/node_modules`)) {
 			// copy main package.json to temp folder
 			fs.copyFileSync(`./package.json`, `${tempBuildFolderPath}/package.json`);
 
-			// install node modules via yarn
-			// const { stderr, stdout } = await exec(`yarn install --cwd ${tempBuildFolderPath} --production=true`);
-
 			let installCommand = "npm install --omit=dev"
 			if (poveryConfig.installScript) {
-				console.log(`Using install script from povery.json: ${poveryConfig.installScript}`);
 				installCommand = poveryConfig.installScript
 			}
 
@@ -233,8 +224,6 @@ export async function installNodeModules(functionName, poveryConfig) {
 			path.resolve(`./lambda/${functionName}/.dist/node_modules`)
 		);
 
-		// spawn a cli process to do npm install on the folder
-		// const {stdout, stderr} = await exec(`cd ./lambda/${functionName} && yarn install --production=true`);
 		spinner.stop();
 	} catch (err) {
 		spinner.stop();

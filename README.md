@@ -60,6 +60,19 @@ povery function invoke EVENT_Something
 }
 ```
 
-#### deployStrategy
+#### `deployStrategy`
 - `STAGE_PREFIX`: It will deploy your lambdas with the stage name as prefix. Example: `dev_API_Something`
-  - `STAGE_ALIAS`: It will deploy your lambdas with the stage name as alias. Example: `API_Something:dev`
+- `STAGE_ALIAS`: It will deploy your lambdas with the stage name as alias. Example: `API_Something:dev`
+
+#### `installScript`
+You can specify a script to run instead of the default `npm install` when building your lambdas.
+
+### .gitignore file
+
+Please add this to your `.gitignore` file:
+```
+.serverless.*
+```
+
+### env variables
+There should be a `.envrc` file in the root of your project, defining the env variables for the project. Every exported variable in this file will be available to the execution of your local lambdas.
