@@ -89,7 +89,7 @@ export async function handleFunctionCommand(answers) {
 		}
 
 		if (operation === 'build') {
-			await buildFunction(functionName);
+			await buildFunction(functionName, poveryConfig);
 			return;
 		}
 
@@ -195,7 +195,7 @@ export function cleanDist(functionName) {
 	rimraf.sync(`./lambda/${functionName}/.dist`);
 }
 
-export async function installNodeModules(functionName) {
+export async function installNodeModules(functionName, poveryConfig) {
 	const spinner = ora(`Installing npm packages`).start();
 	try {
 		// if temporary build_folder does not exists, create it
@@ -215,7 +215,14 @@ export async function installNodeModules(functionName) {
 
 			// install node modules via yarn
 			// const { stderr, stdout } = await exec(`yarn install --cwd ${tempBuildFolderPath} --production=true`);
-			const { stderr, stdout } = await exec(`cd ${tempBuildFolderPath} && npm install --omit=dev`);
+
+			let installCommand = "npm install --omit=dev"
+			if (poveryConfig.installScript) {
+				console.log(`Using install script from povery.json: ${poveryConfig.installScript}`);
+				installCommand = poveryConfig.installScript
+			}
+
+			const { stderr, stdout } = await exec(`cd ${tempBuildFolderPath} && ${installCommand}`);
 			console.error(stderr);
 			console.log(stdout);
 		}
@@ -277,7 +284,7 @@ export async function buildFunction(functionName, poveryConfig) {
 		fs.mkdirSync(path.resolve(`./lambda/${functionName}/.dist`));
 	}
 
-	await installNodeModules(functionName);
+	await installNodeModules(functionName, poveryConfig);
 	await compileTypescript(functionName);
 	// await checkDependencies(functionName);
 	return await makeBuildZip(functionName);
@@ -326,8 +333,8 @@ export async function updateFunctionCode(functionName, environment, deployStrate
 	updateLambdaSpinner.succeed(`Updated ${functionName}`);
 }
 
-export async function deployFunction(functionName, { environment}, {deployStrategy} ) {
-	await buildFunction(functionName);
+export async function deployFunction(functionName, { environment}, {deployStrategy, installScript} ) {
+	await buildFunction(functionName, {installScript});
 	await updateFunctionCode(functionName, environment, deployStrategy);
 	cleanDist(functionName);
 }
