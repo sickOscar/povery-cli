@@ -2,6 +2,7 @@ import {spawn} from 'child_process';
 import _ from 'lodash';
 import fs from 'fs';
 import path from 'path';
+import JSON5 from 'json5';
 
 function getPoveryConfig() {
 
@@ -11,7 +12,7 @@ function getPoveryConfig() {
         throw new Error('No povery.json file found. Run "povery init" first.');
     }
 
-    const poveryConf = JSON.parse(fs.readFileSync(poveryJsonPath, 'utf8'));
+    const poveryConf = JSON5.parse(fs.readFileSync(poveryJsonPath, 'utf8'));
 
     // project name is the current folder name
     const projectName = process.cwd().split('/').pop();
@@ -64,6 +65,9 @@ function getPoveryConfig() {
             "serverless-offline": {
                 // "useChildProcesses": true,
                 "reloadHandler": true,
+            },
+            "serverlessPluginTypescript": {
+                tsConfigFileLocation: './tsconfig.json'
             }
         },
         package: {
@@ -74,6 +78,7 @@ function getPoveryConfig() {
         functions,
         plugins: [
             "serverless-plugin-typescript",
+            "serverless-tscpaths",
             "serverless-offline"
         ]
     }

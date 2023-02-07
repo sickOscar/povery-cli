@@ -14,6 +14,7 @@ import {Worker, workerData} from 'worker_threads';
 
 import { getLocalLambdasList } from './utils.mjs';
 import {region} from "./const.mjs";
+import JSON5 from "json5";
 
 export async function promoteFunction(stage, functionName) {
 	const lambdaService = new aws.Lambda({
@@ -250,18 +251,64 @@ export async function checkDependencies(functionName) {
 
 export async function compileTypescript(functionName) {
 	const spinner = ora(`Compiling typescript`).start();
+
+	const tsconfigPath = `./tsconfig.json`;
+	if (!fs.existsSync(tsconfigPath)) {
+		throw new Error(`No tsconfig.json found in root directory. Please create one.`);
+	}
+
+	const tsConfig = JSON5.parse(fs.readFileSync(tsconfigPath, "utf8"));
+	const paths = tsConfig.compilerOptions.paths;
+
+	let symlinks = [];
+
+	// map all paths to symlinks
+	Object.keys(paths).forEach((key) => {
+		const pathTokens = paths[key][0].split("/");
+		const p = pathTokens.slice(0, pathTokens.length - 1).join("/");
+		const symLinkDest = path.resolve(`./lambda/${functionName}/${p}`);
+		fs.symlinkSync(
+			path.resolve(p),
+			symLinkDest
+		);
+		symlinks.push(symLinkDest);
+	});
+
+	const newTsConfig = {
+		compilerOptions: {
+			experimentalDecorators: true,
+			outDir: `./.dist`,
+			rootDir: "./",
+			baseUrl: "./",
+			paths: {
+				...paths,
+			}
+		},
+		include: ["index.ts"]
+	}
+	// write tsconfig to lambda folder
+	fs.writeFileSync(
+		`./lambda/${functionName}/tsconfig.json`,
+		JSON.stringify(newTsConfig, null, 2)
+	);
+
 	try {
-		const { stdout, stderr } = await exec(`cd ./lambda/${functionName} && tsc --outdir .dist --experimentalDecorators true index.ts`);
+		const { stdout, stderr } = await exec(`cd ./lambda/${functionName} && tsc && tsc-alias`);
 		spinner.succeed(`Compiled typescript`);
 		console.error(stderr);
 		console.log(stdout);
-
-		// await exec(`cp ./lambda/${functionName}/package.json ./lambda/${functionName}/.dist/lambda/${functionName}/package.json`)
 	} catch (err) {
 		spinner.fail(`Failed to compile typescript`);
 		console.log(err);
 		throw new Error(err);
 	}
+
+	// remove tsconfig from lambda folder
+	fs.unlinkSync(`./lambda/${functionName}/tsconfig.json`);
+	// remove symlinks
+	symlinks.forEach((symLink) => {
+		fs.unlinkSync(symLink);
+	})
 }
 
 export async function buildFunction(functionName, poveryConfig) {
