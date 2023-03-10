@@ -43,13 +43,13 @@ Configure `povery.json` file with the routes you need.
 ```
 Then run:
 ```bash
-povery start
+povery-cli start
 ```
 
 ### Invoke a lambda locally
 It runs your ts code with the json file `event.json` in the lambda folder.
 ```
-povery function invoke EVENT_Something
+povery-cli function invoke EVENT_Something
 ```
 
 ### `povery.json` reference
