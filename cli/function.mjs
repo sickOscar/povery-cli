@@ -277,6 +277,7 @@ export async function compileTypescript(functionName) {
 	const newTsConfig = {
 		compilerOptions: {
 			experimentalDecorators: true,
+			emitDecoratorMetadata: true,
 			outDir: `./.dist`,
 			rootDir: "./",
 			baseUrl: "./",
