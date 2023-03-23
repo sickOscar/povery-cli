@@ -1,6 +1,6 @@
 {
   "name": "povery-cli",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "author": "Oscar Chinellato",
   "description": "Povery - The CLI",
   "main": "index.js",

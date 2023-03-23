@@ -274,19 +274,21 @@ export async function compileTypescript(functionName) {
 		symlinks.push(symLinkDest);
 	});
 
-	const newTsConfig = {
-		compilerOptions: {
-			experimentalDecorators: true,
-			emitDecoratorMetadata: true,
-			outDir: `./.dist`,
-			rootDir: "./",
-			baseUrl: "./",
-			paths: {
-				...paths,
-			}
-		},
-		include: ["index.ts"]
+
+    const newTsConfig = JSON.parse(JSON.stringify(tsConfig));
+	if (!newTsConfig.compilerOptions) {
+		newTsConfig.compilerOptions = {};
 	}
+	newTsConfig.compilerOptions.experimentalDecorators = true;
+	newTsConfig.compilerOptions.emitDecoratorMetadata = true;
+	newTsConfig.compilerOptions.outDir = "./.dist";
+	newTsConfig.compilerOptions.rootDir = "./";
+	newTsConfig.compilerOptions.baseUrl = "./";
+	newTsConfig.compilerOptions.paths = {
+		...paths
+	}
+	newTsConfig.include = newTsConfig.include ? [...newTsConfig.include, "index.ts"] : ["index.ts"];
+
 	// write tsconfig to lambda folder
 	fs.writeFileSync(
 		`./lambda/${functionName}/tsconfig.json`,
