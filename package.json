@@ -1,6 +1,6 @@
 {
   "name": "povery-cli",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "author": "Oscar Chinellato",
   "description": "Povery - The CLI",
   "main": "index.js",
@@ -8,6 +8,7 @@
     "test": "NODE_ENV=development jest",
     "build": "rimraf ./dist && tsc --project tsconfig.build.json --watch"
   },
+  "repository": "https://github.com/sickOscar/povery-cli",
   "keywords": [],
   "bin": "./cli.mjs",
   "license": "MIT",
