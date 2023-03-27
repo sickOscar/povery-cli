@@ -34,7 +34,8 @@
     "serverless-tscpaths": "^0.0.8",
     "ts-node": "^10.9.1",
     "tsc-alias": "^1.8.2",
-    "tsconfig-paths": "^4.1.2"
+    "tsconfig-paths": "^4.1.2",
+    "esbuild": "^0.17.14"
   },
   "devDependencies": {
     "@types/jest": "^28.1.8",

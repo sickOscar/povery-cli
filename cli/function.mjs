@@ -11,6 +11,7 @@ import rimraf from 'rimraf';
 import * as util from 'util';
 const exec = util.promisify(execChildProcess);
 import {Worker, workerData} from 'worker_threads';
+import esbuild from 'esbuild';
 
 import { getLocalLambdasList } from './utils.mjs';
 import {region} from "./const.mjs";
@@ -180,9 +181,11 @@ export async function makeBuildZip(functionName) {
 	const zip = new AdmZip();
 
 	const addingSpinner = ora(`Adding ${functionName} to zip`).start();
-	zip.addLocalFolder(path.resolve(`./lambda/${functionName}/.dist`));
-	addingSpinner.succeed(`Added ${functionName} to zip`);
 
+	zip.addLocalFile(path.resolve(`./lambda/${functionName}/.dist/index.js`));
+	zip.addLocalFile(path.resolve(`./lambda/${functionName}/.dist/index.js.map`));
+
+	addingSpinner.succeed(`Added ${functionName} to zip`);
 
 	const zipPath = `./lambda/${functionName}/.dist/${functionName}.zip`;
 	const zippingSpinner = ora(`Writing zip to ${zipPath}`).start();
@@ -296,7 +299,17 @@ export async function compileTypescript(functionName) {
 	);
 
 	try {
-		const { stdout, stderr } = await exec(`cd ./lambda/${functionName} && tsc && tsc-alias`);
+		const { stdout, stderr } = await exec(`cd ./lambda/${functionName} && tsc --noEmit`);
+
+		esbuild.buildSync({
+			entryPoints: [`./lambda/${functionName}/index.ts`],
+			bundle: true,
+			outfile: `./lambda/${functionName}/.dist/index.js`,
+			minify: true,
+			platform: "node",
+			sourcemap: true,
+		})
+
 		spinner.succeed(`Compiled typescript`);
 		console.error(stderr);
 		console.log(stdout);
@@ -304,14 +317,16 @@ export async function compileTypescript(functionName) {
 		spinner.fail(`Failed to compile typescript`);
 		console.log(err);
 		throw new Error(err);
+	} finally {
+
+		// remove tsconfig from lambda folder
+		fs.unlinkSync(`./lambda/${functionName}/tsconfig.json`);
+		// remove symlinks
+		symlinks.forEach((symLink) => {
+			fs.unlinkSync(symLink);
+		})
 	}
 
-	// remove tsconfig from lambda folder
-	fs.unlinkSync(`./lambda/${functionName}/tsconfig.json`);
-	// remove symlinks
-	symlinks.forEach((symLink) => {
-		fs.unlinkSync(symLink);
-	})
 }
 
 export async function buildFunction(functionName, poveryConfig) {
