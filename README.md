@@ -1,8 +1,8 @@
 # Povery CLI
 
-#### Povery is a framework for building things on AWS Lambda with Typescript
+#### [Povery](https://github.com/sickOscar/povery) is a framework for building things on AWS Lambda with Typescript
 
-This is the CLI for Povery.
+This is the CLI for Povery. 
 
 
 ## Install
@@ -15,7 +15,9 @@ npm i povery-cli
 
 ### Project Structure
 
-Povery is an opinionated framework. As such, it needs a defined structure to work properly. The structure is as follows:
+[Povery](https://github.com/sickOscar/povery) is an opinionated framework to build things on AWS lambda with Typescript. 
+
+As such, it needs a defined structure to work properly. The structure is as follows:
 
 ```
 /<project_root>
