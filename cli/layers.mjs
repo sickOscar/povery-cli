@@ -7,7 +7,7 @@ import {exec as execChildProcess} from "child_process";
 import {Upload} from "@aws-sdk/lib-storage";
 const exec = util.promisify(execChildProcess);
 import {S3Client} from "@aws-sdk/client-s3";
-import {region} from "../const.mjs";
+import {region} from "./const.mjs";
 
 export async function uploadLambdaLayers(functionName) {
 
