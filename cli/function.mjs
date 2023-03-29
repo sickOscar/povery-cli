@@ -1,6 +1,5 @@
 import AdmZip from 'adm-zip';
 import assert from 'assert';
-import aws from 'aws-sdk';
 import chalk from 'chalk';
 import { exec as execChildProcess } from 'child_process';
 import fs from 'fs-extra';
@@ -12,14 +11,21 @@ import * as util from 'util';
 const exec = util.promisify(execChildProcess);
 import {Worker, workerData} from 'worker_threads';
 import esbuild from 'esbuild';
+import {
+	LambdaClient,
+	GetFunctionCommand,
+	UpdateFunctionCodeCommand,
+	UpdateAliasCommand,
+	PublishVersionCommand
+} from "@aws-sdk/client-lambda";
 
 import { getLocalLambdasList } from './utils.mjs';
 import {region} from "./const.mjs";
 import JSON5 from "json5";
 
 export async function promoteFunction(stage, functionName) {
-	const lambdaService = new aws.Lambda({
-		region: region,
+	const lambdaClient = new LambdaClient({
+		region
 	});
 
 	const startingAlias = stage === 'test' ? 'dev' : 'test';
@@ -28,11 +34,10 @@ export async function promoteFunction(stage, functionName) {
 		const newVersion = await versionFunction(functionName);
 		await setAlias(functionName, newVersion, stage);
 	} else {
-		const functionInfo = await lambdaService
-			.getFunction({
-				FunctionName: `${functionName}:${startingAlias}`,
-			})
-			.promise();
+		const getFunctionInfoCommand = new GetFunctionCommand({
+			FunctionName: `${functionName}:${startingAlias}`,
+		});
+		const functionInfo = await lambdaClient.send(getFunctionInfoCommand);
 
 		await setAlias(functionName, functionInfo.Configuration.Version, stage);
 	}
@@ -74,16 +79,11 @@ export async function handleFunctionCommand(answers) {
 	}
 
 	async function localExec(functionName, options) {
-		const lambdaService = new aws.Lambda({
-			region: region,
-		});
+		const lambdaClient = new LambdaClient({region});
 
 		// check if lambda folder exists
 		const lambdaFolder = path.resolve(`./lambda/${functionName}`);
 		assert(fs.existsSync(lambdaFolder), `Lambda folder ${lambdaFolder} does not exist`);
-
-
-
 
 		if (!confirm) {
 			console.log('Aborted');
@@ -97,7 +97,7 @@ export async function handleFunctionCommand(answers) {
 
 		if (operation === 'info') {
 			console.log(`Info for ${functionName}`);
-			getFunctionInfo(lambdaService, functionName, options, poveryConfig);
+			getFunctionInfo(lambdaClient, functionName, options, poveryConfig);
 			return;
 		}
 
@@ -252,7 +252,7 @@ export async function checkDependencies(functionName) {
 	}
 }
 
-export async function compileTypescript(functionName) {
+export async function compileTypescript(functionName, poveryConfig) {
 	const spinner = ora(`Compiling typescript`).start();
 
 	const tsconfigPath = `./tsconfig.json`;
@@ -308,6 +308,7 @@ export async function compileTypescript(functionName) {
 			minify: true,
 			platform: "node",
 			sourcemap: true,
+			external: poveryConfig.esbuild?.external || []
 		})
 
 		spinner.succeed(`Compiled typescript`);
@@ -339,25 +340,20 @@ export async function buildFunction(functionName, poveryConfig) {
 	}
 
 	await installNodeModules(functionName, poveryConfig);
-	await compileTypescript(functionName);
+	await compileTypescript(functionName, poveryConfig);
 	// await checkDependencies(functionName);
 	return await makeBuildZip(functionName);
 }
 
-export function getFunctionInfo(lambdaService, functionName, {environment}, {deployStrategy}) {
+export function getFunctionInfo(lambdaClient, functionName, {environment}, {deployStrategy}) {
 	const remoteFunctionName = getRemoteFunctionName(deployStrategy, environment, functionName);
-	lambdaService.getFunction(
-		{
-			FunctionName: remoteFunctionName,
-		},
-		(err, data) => {
-			if (err) {
-				console.log(err, err.stack);
-			} else {
-				console.log(data);
-			}
-		}
-	);
+
+	lambdaClient.send(new GetFunctionCommand({
+		FunctionName: remoteFunctionName
+	}))
+		.then(console.log)
+		.catch(console.error)
+
 }
 
 function getRemoteFunctionName(deployStrategy, environment, functionName) {
@@ -377,50 +373,50 @@ export async function updateFunctionCode(functionName, environment, deployStrate
 
 	const remoteFunctionName = getRemoteFunctionName(deployStrategy, environment, functionName);
 
-	const lambdaService = new aws.Lambda({region});
-	await lambdaService
-		.updateFunctionCode({
-			FunctionName: remoteFunctionName,
-			ZipFile: fs.readFileSync(path.resolve(`./lambda/${functionName}/.dist/${functionName}.zip`)),
-		})
-		.promise();
+	const lambdaClient = new LambdaClient({region});
+	await lambdaClient.send(new UpdateFunctionCodeCommand({
+		FunctionName: remoteFunctionName,
+		ZipFile: fs.readFileSync(path.resolve(`./lambda/${functionName}/.dist/${functionName}.zip`)),
+	}))
+
 	updateLambdaSpinner.succeed(`Updated ${functionName}`);
 }
 
-export async function deployFunction(functionName, { environment}, {deployStrategy, installScript} ) {
-	await buildFunction(functionName, {installScript});
+export async function deployFunction(functionName, { environment}, poveryConfig) {
+	const deployStrategy = poveryConfig.deployStrategy || '';
+	await buildFunction(functionName, poveryConfig);
 	await updateFunctionCode(functionName, environment, deployStrategy);
 	cleanDist(functionName);
 }
 
 export async function setAlias(lambdaName, version, aliasName) {
-	const lambdaService = new aws.Lambda({
-		region: region,
-	});
+	const lambdaClient = new LambdaClient({region});
 	const aliasSpinner = ora(`Setting alias ${lambdaName}`).start();
-	// point function dev alias to the newly created version
-	const alias = await lambdaService
-		.updateAlias({
-			FunctionName: lambdaName,
-			Name: aliasName,
-			FunctionVersion: version,
-		})
-		.promise();
+	await lambdaClient.send(new UpdateAliasCommand({
+		FunctionName: lambdaName,
+		Name: aliasName,
+		FunctionVersion: version,
+	}))
+
 	aliasSpinner.succeed(`Set ${aliasName} alias ${lambdaName} to ${version}`);
 }
 
 export async function versionFunction(lambdaName) {
 	const versionSpinner = ora(`Versioning ${lambdaName}`).start();
 	// publish a new version of the function
-	const lambdaService = new aws.Lambda({
-		region: region,
-	});
-	const version = await lambdaService
-		.publishVersion({
-			FunctionName: lambdaName,
-			Description: `Versioned ${new Date()}`,
-		})
-		.promise();
+	const lambdaClient = new LambdaClient({region});
+	await lambdaClient.send(new PublishVersionCommand({
+		FunctionName: lambdaName,
+		Description: `Versioned ${new Date()}`,
+	}));
+
+
+	// const version = await lambdaClient
+	// 	.publishVersion({
+	// 		FunctionName: lambdaName,
+	// 		Description: `Versioned ${new Date()}`,
+	// 	})
+	// 	.promise();
 	versionSpinner.succeed(`Versioned ${lambdaName}: ${version.Version}`);
 	await setAlias(lambdaName, '$LATEST', 'dev');
 

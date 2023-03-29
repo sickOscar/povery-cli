@@ -2,11 +2,12 @@ import fs from "fs-extra";
 import * as standardfs from "fs"
 import ora from "ora";
 import AdmZip from "adm-zip";
-import aws from "aws-sdk";
 import util from "util";
 import {exec as execChildProcess} from "child_process";
+import {Upload} from "@aws-sdk/lib-storage";
 const exec = util.promisify(execChildProcess);
-
+import {S3Client} from "@aws-sdk/client-s3";
+import {region} from "../const.mjs";
 
 export async function uploadLambdaLayers(functionName) {
 
@@ -69,15 +70,17 @@ async function uploadOnS3(functionName, zipPath) {
     const uploadSpinner = ora(`Uploading ${functionName} layer to AWS`).start();
     let uploadProgress = 0;
     const s3Key = `${functionName}_Layer/layer.zip`
-    const managedUpload = new aws.S3.ManagedUpload(
-        {
-            params: {
-                Bucket: process.env.LAMBDA_DEPLOY_BUCKET,
-                Key: s3Key,
-                Body: standardfs.createReadStream(zipPath)
-            }
+
+    const managedUpload = new Upload({
+        client: new S3Client({region}),
+
+        params: {
+            Bucket: process.env.LAMBDA_DEPLOY_BUCKET,
+            Key: s3Key,
+            Body: standardfs.createReadStream(zipPath)
         }
-    )
+
+    })
     managedUpload.on('httpUploadProgress', function (evt) {
         uploadProgress = evt.loaded / evt.total;
         uploadSpinner.text = `Uploading ${functionName} layer to AWS (${Math.round(uploadProgress * 100)}% of ${Math.round(evt.total / 1024 / 1024)}MB)`;
