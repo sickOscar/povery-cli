@@ -5,6 +5,15 @@
 This is the CLI for Povery. 
 
 
+You can easily serve locally many lambdas as an http server, or you can invoke them locally from the terminal. 
+
+Unlike other things like this, it does not want to create lambdas or any kind of infrastructure 
+on AWS for you (just deploy them, if you wish). 
+
+We firmly believe on separation of concerns between code that handles application logic and code for infra.
+Mixing those things, it always gets messy at some point...
+
+
 ## Install
 
 ```bash
@@ -13,11 +22,18 @@ npm i povery-cli
 
 ## Getting started
 
+### General rules to follow
+
+- Every lambda has a named folder under `lambda` folder. 
+- The entrypoint of the lambda MUST BE `index.ts` file.
+- Lambdas that serve API Gateway SHOULD BE prefixed with `API_` (e.g. `API_Something`) and start with a capital letter.
+- Lambdas that serve ant other events SHOULD BE prefixed with `EVENT_` (e.g. `EVENT_Something`) and start with a capital letter.
+- API Gateway MUST USE proxy integration to respond to api request.
+
+
 ### Project Structure
 
-[Povery](https://github.com/sickOscar/povery) is an opinionated framework to build things on AWS lambda with Typescript. 
-
-As such, it needs a defined structure to work properly. The structure is as follows:
+As rules are clear, this cli needs a defined structure to work properly. The structure is as follows:
 
 ```
 /<project_root>
