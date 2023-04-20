@@ -14,22 +14,13 @@ We firmly believe on separation of concerns between code that handles applicatio
 Mixing those things, it always gets messy at some point...
 
 
-## Install
+### General rules to follow to structure your project
 
-```bash
-npm i povery-cli
-```
-
-## Getting started
-
-### General rules to follow
-
-- Every lambda has a named folder under `lambda` folder. 
+- Every lambda has a named folder under `lambda` folder.
 - The entrypoint of the lambda MUST BE `index.ts` file.
+- API Gateway MUST USE proxy integration to respond to api request.
 - Lambdas that serve API Gateway SHOULD BE prefixed with `API_` (e.g. `API_Something`) and start with a capital letter.
 - Lambdas that serve ant other events SHOULD BE prefixed with `EVENT_` (e.g. `EVENT_Something`) and start with a capital letter.
-- API Gateway MUST USE proxy integration to respond to api request.
-
 
 ### Project Structure
 
@@ -44,6 +35,46 @@ As rules are clear, this cli needs a defined structure to work properly. The str
       index.ts
       event.json
   povery.json
+```
+## Install
+
+If you want to install it globally, you can run:
+
+```bash
+npm i -g povery-cli
+```
+
+### Avoid global install
+A better choice is to install it locally on your project as a dev dependency, in which case you can run:
+
+```bash
+npm i -D povery-cli
+```
+
+In this case, you can add a script to your `package.json` file to run it:
+
+```json
+{
+  "scripts": {
+    "povery-cli": "povery-cli"
+  }
+}
+```
+
+And call it like this:
+```bash
+npm run povery-cli
+```
+
+Just remeber that in this way, specific options to `povery-cli` must be passed after `--` 
+```bash
+npm run povery-cli function deploy API_Something  -- --stage dev
+```
+
+## Getting started
+
+```bash
+povery-cli --help
 ```
 
 ### Testing APIs on local machine
@@ -73,16 +104,38 @@ It runs your ts code with the json file `event.json` in the lambda folder.
 ```
 povery-cli function invoke EVENT_Something
 ```
-## Configuration
+## Imports and tsconfig.json
 
-### `povery.json` reference
+Working with shared code beteen your lambdas, you will want to add some kind of "common" folders outside of your `lambda` folder.
+Importing file into index.ts code with relative imports will break transpilations
+
+```typescript
+// WRONG LAMBDA CODE on index.ts
+// THIS BREAKS STUFF
+import { Something } from '.../.../common/something.ts';
 ```
-{
-  // .. other fields, mainly for local serve, see povery for reference
-  "deployStrategy": "STAGE_PREFIX" | "STAGE_ALIAS",
-  "installScript": "npm install",
+
+You should instead use aliases and import external deps with them
+
+```typescript
+import { Something } from '@common/something.ts'
+```
+and configure your `tsconfig.json` properly like this
+```
+"compilerOptions": {
+    ...
+    "baseUrl": "./",
+    "paths": {
+        "@common/*": "common/*",
+        "povery": "node_modules/povery"
+    }
+    ...
 }
 ```
+Note the path to `povery` needed to avoid misinterpretation of povery import from esbuild ts transpilation.
+## Configuration
+
+There are more options you can specify on your `povery.json` file:
 
 #### `deployStrategy`
 - `` (enpty string): It will deploy your lambdas without any prefix or alias. Example: `API_Something`
@@ -91,6 +144,21 @@ povery-cli function invoke EVENT_Something
 
 #### `installScript`
 You can specify a script to run instead of the default `npm install` when building your lambdas.
+
+#### `esbuild`
+You can give specific configurations for esbuild stage, like this
+```json
+{
+    "esbuild": {
+       "external": ["pg"]
+    }
+}
+```
+
+This is particularly useful for excluding from bundling particular libreries that you want to put on a Lambda Layer,
+for example libraries that gives compilation errors (for example, libraries that have dynamic imports) o big libraries 
+that makes your index file huge and slows down cold starts.
+
 
 ## Deploying
 

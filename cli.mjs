@@ -40,6 +40,7 @@ const func = program
     .option('-p, --payload <payload>', 'Payload to be used in the function')
     .option('-e, --eventFilename <string>', 'Event file name in folder events')
     .option('-z, --environment <string>', 'Environment', 'dev')
+    .option('-nc, --nocache', 'Disable cache, force npm install')
     .option('--auth', 'load claims file, or defaults to claims.json')
     .action(async (operation, functionName) => {
         const lambdaSteps = [
@@ -75,12 +76,7 @@ const func = program
             inquirer.prompt(lambdaSteps).then((answers) => {
                 handleFunctionCommand({
                     ...answers,
-                    options: {
-                        payload: func.opts().payload,
-                        eventFilename: func.opts().eventFilename,
-                        environment: func.opts().environment,
-                        auth: func.opts().auth,
-                    },
+                    options: func.opts()
                 });
             });
         } else {
@@ -88,12 +84,7 @@ const func = program
                 functionName,
                 operation,
                 confirm: true,
-                options: {
-                    payload: func.opts().payload,
-                    eventFilename: func.opts().eventFilename,
-                    environment: func.opts().environment,
-                    auth: func.opts().auth,
-                },
+                options: func.opts()
             });
         }
     });
@@ -102,6 +93,7 @@ const deployCommand = program
     .command('deploy')
     .description('Deploys all local lambdas to AWS')
     .option('-y, --yes', 'Autoconfirm prompts')
+    .option('-nc, --nocache', 'Do not use cache, force node_modules install')
     .option('-z, --environment <string>', 'Environment', 'dev')
     .action(() => {
         const lambdas = getLocalLambdasList();

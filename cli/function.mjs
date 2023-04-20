@@ -9,7 +9,7 @@ import path from 'path';
 import rimraf from 'rimraf';
 import * as util from 'util';
 const exec = util.promisify(execChildProcess);
-import {Worker, workerData} from 'worker_threads';
+import {Worker} from 'worker_threads';
 import esbuild from 'esbuild';
 import {
 	LambdaClient,
@@ -43,7 +43,7 @@ export async function promoteFunction(stage, functionName) {
 	}
 }
 
-function getPoveryConfig() {
+export function getPoveryConfig() {
 	try {
 		const config = fs.readJSONSync(path.resolve(`./povery.json`));
 		console.log(chalk.green('povery.json found'));
@@ -72,13 +72,13 @@ export async function handleFunctionCommand(answers) {
 			])
 			.then(async function (answers) {
 				const { functionName: lambdaName } = answers;
-				await localExec(lambdaName, options);
+				await doOperationOnFunction(lambdaName, options);
 			});
 	} else {
-		await localExec(selectedFunction, options);
+		await doOperationOnFunction(selectedFunction, options);
 	}
 
-	async function localExec(functionName, options) {
+	async function doOperationOnFunction(functionName, options) {
 		const lambdaClient = new LambdaClient({region});
 
 		// check if lambda folder exists
@@ -91,7 +91,8 @@ export async function handleFunctionCommand(answers) {
 		}
 
 		if (operation === 'build') {
-			await buildFunction(functionName, poveryConfig);
+			const noCache = options.nocache;
+			await buildFunction(functionName, poveryConfig, {noCache});
 			return;
 		}
 
@@ -199,7 +200,17 @@ export function cleanDist(functionName) {
 	rimraf.sync(`./lambda/${functionName}/.dist`);
 }
 
-export async function installNodeModules(functionName, poveryConfig) {
+/**
+ * Install node modules only if they are not installed or if noCache is true
+ * @param nodeModulesPath
+ * @param noCache
+ * @returns {boolean}
+ */
+function shouldInstallNodeModules(nodeModulesPath, noCache) {
+	return !fs.existsSync(nodeModulesPath) || noCache;
+}
+
+export async function installNodeModules(functionName, poveryConfig, noCache) {
 	const spinner = ora(`Installing npm packages`).start();
 	try {
 		// if temporary build_folder does not exists, create it
@@ -208,7 +219,7 @@ export async function installNodeModules(functionName, poveryConfig) {
 			fs.mkdirSync(tempBuildFolderPath);
 		}
 
-		if (!fs.existsSync(`${tempBuildFolderPath}/node_modules`)) {
+		if (shouldInstallNodeModules(`${tempBuildFolderPath}/node_modules`, noCache)) {
 			// copy main package.json to temp folder
 			fs.copyFileSync(`./package.json`, `${tempBuildFolderPath}/package.json`);
 
@@ -330,7 +341,7 @@ export async function compileTypescript(functionName, poveryConfig) {
 
 }
 
-export async function buildFunction(functionName, poveryConfig) {
+export async function buildFunction(functionName, poveryConfig, {noCache}) {
 	console.log(chalk.green(`Building ${functionName}`));
 
 	cleanDist(functionName);
@@ -339,7 +350,7 @@ export async function buildFunction(functionName, poveryConfig) {
 		fs.mkdirSync(path.resolve(`./lambda/${functionName}/.dist`));
 	}
 
-	await installNodeModules(functionName, poveryConfig);
+	await installNodeModules(functionName, poveryConfig, noCache);
 	await compileTypescript(functionName, poveryConfig);
 	// await checkDependencies(functionName);
 	return await makeBuildZip(functionName);
@@ -382,9 +393,10 @@ export async function updateFunctionCode(functionName, environment, deployStrate
 	updateLambdaSpinner.succeed(`Updated ${functionName}`);
 }
 
-export async function deployFunction(functionName, { environment}, poveryConfig) {
+export async function deployFunction(functionName, { environment, nocache}, poveryConfig) {
+	const noCache = nocache || false;
 	const deployStrategy = poveryConfig.deployStrategy || '';
-	await buildFunction(functionName, poveryConfig);
+	await buildFunction(functionName, poveryConfig, {noCache});
 	await updateFunctionCode(functionName, environment, deployStrategy);
 	cleanDist(functionName);
 }
