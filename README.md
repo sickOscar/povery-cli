@@ -138,7 +138,7 @@ Note the path to `povery` needed to avoid misinterpretation of povery import fro
 There are more options you can specify on your `povery.json` file:
 
 #### `deployStrategy`
-- `` (enpty string): It will deploy your lambdas without any prefix or alias. Example: `API_Something`
+- `` (empty string): It will deploy your lambdas without any prefix or alias. Example: `API_Something`
 - `STAGE_PREFIX`: It will deploy your lambdas with the stage name as prefix. Example: `dev_API_Something`
 - `STAGE_ALIAS`: It will deploy your lambdas with the stage name as alias. Example: `API_Something:dev`
 
@@ -156,7 +156,7 @@ You can give specific configurations for esbuild stage, like this
 ```
 
 This is particularly useful for excluding from bundling particular libreries that you want to put on a Lambda Layer,
-for example libraries that gives compilation errors (for example, libraries that have dynamic imports) o big libraries 
+for example libraries that gives compilation errors or libraries that have dynamic imports) o big libraries 
 that makes your index file huge and slows down cold starts.
 
 

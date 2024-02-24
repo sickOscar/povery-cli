@@ -85,15 +85,19 @@ function getPoveryConfig() {
 
     // check if .envrc file exists
     const envrcPath = path.resolve(`./.envrc`);
-    // if yes, add all env vars to serverless config
-    if (fs.lstatSync(envrcPath).isFile()) {
-        const envrc = fs.readFileSync(envrcPath, 'utf8');
-        const envVars = envrc.split('\n')
-            .filter((line) => line.startsWith('export '));
-        envVars.forEach((envVar) => {
-            const [key, value] = envVar.split('=');
-            defaultServerlessConf.provider.environment[key.replace('export ', '')] = value;
-        })
+    try {
+        // if yes, add all env vars to serverless config
+        if (fs.lstatSync(envrcPath).isFile()) {
+            const envrc = fs.readFileSync(envrcPath, 'utf8');
+            const envVars = envrc.split('\n')
+                .filter((line) => line.startsWith('export '));
+            envVars.forEach((envVar) => {
+                const [key, value] = envVar.split('=');
+                defaultServerlessConf.provider.environment[key.replace('export ', '')] = value;
+            })
+        }
+    } catch (e) {
+        console.log('No .envrc file found');
     }
 
     const serverlessConfFile = '.serverless.json';
