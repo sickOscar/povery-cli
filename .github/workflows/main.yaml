@@ -1,5 +1,4 @@
 name: Node.js CI
-uses: JS-DevTools/npm-publish@v3.0.1
 
 on:
   push:
