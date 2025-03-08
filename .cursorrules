@@ -88,6 +88,14 @@ povery-cli/
 ├── node_modules/
 ├── package-lock.json
 ├── package.json
+├── tests/
+│   ├── integration/
+│   │   └── cli.test.ts
+│   └── unit/
+│       ├── function.test.ts
+│       ├── layers.test.ts
+│       ├── server.test.ts
+│       └── utils.test.ts
 ├── tsconfig.json
 └── tsconfig.test.json
 ```
@@ -96,6 +104,9 @@ povery-cli/
 - `.github/`: GitHub-specific configuration files
 - `cli/`: Core CLI implementation files
 - `node_modules/`: External dependencies (not tracked in git)
+- `tests/`: Test files for the CLI
+  - `integration/`: Integration tests for the CLI
+  - `unit/`: Unit tests for individual modules
 
 ## Project Structure Rules
 - Always update the project tree in this file when creating new files or folders
