@@ -1,0 +1,106 @@
+# Povery CLI Tech Stack
+
+## Core Technologies
+- Node.js - Runtime environment
+- TypeScript - Primary programming language
+- ESM Modules - Modern JavaScript module system (.mjs files)
+
+## CLI Framework
+- Commander.js - Command-line interface framework
+- Inquirer.js - Interactive command-line user interface
+
+## AWS Integration
+- AWS SDK for JavaScript (v3)
+  - @aws-sdk/client-lambda - Lambda function management
+  - @aws-sdk/client-s3 - S3 bucket operations
+  - @aws-sdk/lib-storage - Enhanced S3 storage operations
+
+## Build & Deployment Tools
+- esbuild - Fast JavaScript/TypeScript bundler
+- Serverless Framework
+  - serverless-offline - Local development server
+  - serverless-plugin-typescript - TypeScript support
+  - serverless-tscpaths - Path alias resolution
+
+## Testing
+- Jest - Testing framework
+- ts-jest - TypeScript support for Jest
+
+## Utilities
+- fs-extra - Enhanced file system operations
+- rimraf - Cross-platform directory removal
+- chalk - Terminal string styling
+- ora - Elegant terminal spinners
+- adm-zip - ZIP file manipulation
+- dotenv - Environment variable management
+- JSON5 - JSON with comments for configuration
+- lodash - Utility library
+- date-fns - Date manipulation library
+
+## Development Tools
+- TypeScript - Static type checking
+- Prettier - Code formatting
+- ts-node - TypeScript execution environment
+- tsconfig-paths - Path alias resolution for TypeScript 
+
+## AI Quick Reference
+- This is a CLI tool for managing AWS Lambda functions written in TypeScript
+- Main purpose: Simplify local development, testing, and deployment of serverless applications
+- Key features: Local testing, building, deployment, versioning, and promotion between environments
+- Project structure: Lambda functions organized in `lambda/` directory with naming conventions (API_* for API Gateway, EVENT_* for events)
+- Configuration: Uses povery.json for project settings and .envrc for environment variables
+- Design philosophy: Separation between application code and infrastructure management
+- Main commands: start (local server), function (lambda operations), deploy (all lambdas), layers (lambda layers), promote (between environments)
+- File extensions: .mjs for ESM modules, .ts for TypeScript source files
+- Entry points: Each lambda must have index.ts with handler export 
+
+## Project Structure
+
+```
+povery-cli/
+├── .cursorrules
+├── .editorconfig
+├── .git/
+├── .github/
+├── .gitignore
+├── .idea/
+├── .npmignore
+├── LICENSE
+├── README.md
+├── cli/
+│   ├── api.mjs
+│   ├── const.mjs
+│   ├── deploy.mjs
+│   ├── deploy.worker.mjs
+│   ├── function.mjs
+│   ├── launcher.source
+│   ├── launcher.worker.mjs
+│   ├── layers.mjs
+│   ├── offlineAuthorizer.js
+│   ├── offlineAuthorizer.js.map
+│   ├── promote.mjs
+│   ├── server.mjs
+│   ├── tsconfig-paths-bootstrap.js
+│   ├── utils.mjs
+│   └── version.mjs
+├── cli.mjs
+├── jest.config.ts
+├── node_modules/
+├── package-lock.json
+├── package.json
+├── tsconfig.json
+└── tsconfig.test.json
+```
+
+### Directory Descriptions
+- `.github/`: GitHub-specific configuration files
+- `cli/`: Core CLI implementation files
+- `node_modules/`: External dependencies (not tracked in git)
+
+## Project Structure Rules
+- Always update the project tree in this file when creating new files or folders
+- The project tree should accurately reflect the current project structure
+- When updating the project tree, maintain the proper tree formatting with correct indentation and symbols
+- Use `├──` for items that are not the last in their directory
+- Use `└──` for the last item in a directory
+- Use `│` for vertical lines to show hierarchy 
