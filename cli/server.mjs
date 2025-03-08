@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import JSON5 from 'json5';
 
-function getPoveryConfig() {
+function getPoveryConfig(options = {}) {
 
     const poveryJsonPath = path.resolve(`./povery.json`);
 
@@ -65,6 +65,7 @@ function getPoveryConfig() {
             "serverless-offline": {
                 // "useChildProcesses": true,
                 "reloadHandler": true,
+                "timeout": options.timeout || 30
             },
             "serverlessPluginTypescript": {
                 tsConfigFileLocation: './tsconfig.json'
@@ -105,9 +106,9 @@ function getPoveryConfig() {
     return serverlessConfFile;
 }
 
-export async function startServer() {
+export async function startServer(options = {}) {
 
-    const serverlessConfFile = getPoveryConfig();
+    const serverlessConfFile = getPoveryConfig(options);
 
     const env = _.clone(process.env);
 

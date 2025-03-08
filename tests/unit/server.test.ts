@@ -65,7 +65,8 @@ describe('Server Module', () => {
     (childProcess.spawn as jest.Mock).mockReturnValue(mockSpawnProcess);
     
     // Implement the mock startServer function
-    mockStartServer.mockImplementation(async () => {
+    mockStartServer.mockImplementation(async (options) => {
+      
       // Mock implementation of startServer
       // 1. Read povery.json
       const poveryJsonPath = path.resolve('./povery.json');
@@ -145,6 +146,14 @@ describe('Server Module', () => {
         ['offline', 'start', '--config=.serverless.json'],
         { env: expect.any(Object) }
       );
+    });
+
+    it('should accept a timeout parameter', async () => {
+      // Call the function with a timeout parameter
+      await mockStartServer({ timeout: 60 });
+      
+      // Verify the function was called with the timeout parameter
+      expect(mockStartServer).toHaveBeenCalledWith({ timeout: 60 });
     });
   });
 }); 

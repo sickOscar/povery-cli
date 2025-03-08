@@ -6,7 +6,7 @@ import fs from 'fs-extra';
 import inquirer from 'inquirer';
 import ora from 'ora';
 import path from 'path';
-import rimraf from 'rimraf';
+import * as rimraf from 'rimraf';
 import * as util from 'util';
 const exec = util.promisify(execChildProcess);
 import {Worker} from 'worker_threads';

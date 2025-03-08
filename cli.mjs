@@ -28,8 +28,11 @@ program.version('0.0.1').description('CLI').enablePositionalOptions();
 const start = program
     .command('start')
     .description('Starts the lambda server with serverless-offline')
-    .action(() => {
-        startServer();
+    .option('-t, --timeout <seconds>', 'Lambda timeout in seconds', '30')
+    .action((options) => {
+        startServer({
+            timeout: parseInt(options.timeout, 10)
+        });
     });
 
 const func = program

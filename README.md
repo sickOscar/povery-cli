@@ -86,6 +86,15 @@ npm i -g povery-cli
 povery-cli --help
 ```
 
+#### Start Command
+
+```bash
+povery-cli start [options]
+```
+
+Options:
+- `-t, --timeout <seconds>`: Set the Lambda timeout in seconds (default: 30)
+
 ### Local API Testing
 
 Configure routes in `povery.json`:
@@ -107,6 +116,14 @@ Start the local server:
 ```bash
 povery-cli start
 ```
+
+You can customize the Lambda timeout for local development:
+```bash
+povery-cli start --timeout 60
+```
+This sets the Lambda timeout to 60 seconds (default is 30 seconds) which is useful for debugging or when working with long-running operations.
+
+By default, Lambda functions have a 30-second timeout when running locally. If you're experiencing timeout issues during debugging or when working with long-running operations, you can increase this limit using the `--timeout` parameter.
 
 ### Local Lambda Invocation
 
