@@ -1,5 +1,7 @@
 # Povery CLI
 
+[![Node.js CI](https://github.com/sickOscar/povery-cli/actions/workflows/main.yaml/badge.svg)](https://github.com/sickOscar/povery-cli/actions/workflows/main.yaml)
+
 ## Overview
 
 [Povery](https://github.com/sickOscar/povery) is a framework for developing AWS Lambda functions with TypeScript. This CLI tool facilitates local development, testing, and deployment of serverless applications.
