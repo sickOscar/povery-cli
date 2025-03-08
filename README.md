@@ -193,6 +193,62 @@ Deploy all Lambda functions (ideal for CI/CD pipelines):
 povery-cli deploy
 ```
 
+## Function Building Process
+
+Povery CLI follows a structured process when building Lambda functions:
+
+1. **Clean Build Directory**: 
+   - Removes the `.dist` directory for the specified Lambda function
+   - Creates a fresh `.dist` directory for the build output
+
+2. **Install Dependencies**:
+   - Creates a temporary build folder (`.tmp`) if it doesn't exist
+   - Copies the main `package.json` to the temporary folder
+   - Runs `npm install --omit=dev` (or a custom install script specified in `povery.json`)
+   - Creates a symbolic link from the temporary `node_modules` to the Lambda's `.dist/node_modules`
+
+3. **TypeScript Compilation**:
+   - Creates symbolic links for path aliases defined in `tsconfig.json`
+   - Generates a temporary Lambda-specific `tsconfig.json` with appropriate settings
+   - Validates TypeScript code with `tsc --noEmit`
+   - Bundles the code using esbuild with:
+     - Entry point: `./lambda/<functionName>/index.ts`
+     - Output: `./lambda/<functionName>/.dist/index.js`
+     - Minification enabled
+     - Source maps generated
+     - External dependencies excluded as specified in `povery.json`
+   - Cleans up temporary files and symlinks
+
+4. **Package Creation**:
+   - Creates a ZIP file containing:
+     - The compiled JavaScript file (`index.js`)
+     - Source map file (`index.js.map`)
+   - Outputs the ZIP to `./lambda/<functionName>/.dist/<functionName>.zip`
+
+5. **Deployment** (if requested):
+   - Uploads the ZIP file to AWS Lambda using the AWS SDK
+   - Updates the function code with the new package
+   - Applies the appropriate naming strategy based on `deployStrategy` in `povery.json`
+
+This process can be initiated in several ways:
+
+```bash
+# Interactive mode
+povery-cli function
+
+# Direct build (package only)
+povery-cli function build <functionName>
+
+# Direct deployment (build and publish)
+povery-cli function deploy <functionName>
+
+# With environment option
+povery-cli function deploy <functionName> --environment prod
+
+# Force dependency reinstallation
+povery-cli function deploy <functionName> --nocache
+```
+
 ## Build Optimization
 
 By default, Povery CLI:
@@ -208,6 +264,96 @@ NODE_OPTIONS=--enable-source-maps
 ```
 
 Note: This may impact performance and is not recommended for production environments. Consider using error tracking services like Sentry with uploaded source maps instead.
+
+## Deployment Operations
+
+Povery CLI provides several commands for managing the deployment lifecycle of your Lambda functions:
+
+### Function Command
+
+The `function` command is the primary interface for working with individual Lambda functions:
+
+```bash
+povery-cli function [operation] [functionName] [options]
+```
+
+Available operations:
+- `info`: Retrieve information about a deployed Lambda function
+- `build`: Build the Lambda package without deploying
+- `deploy`: Build and deploy the Lambda function
+- `promote`: Promote a Lambda function to a different stage
+- `invoke`: Run the Lambda function locally with an event
+- `clean`: Remove build artifacts
+
+Options:
+- `-p, --payload <payload>`: Specify a payload for function invocation
+- `-e, --eventFilename <string>`: Specify an event file for invocation
+- `-z, --environment <string>`: Target environment (default: 'dev')
+- `-nc, --nocache`: Disable cache and force npm install
+- `--auth`: Load claims file for authorization testing
+
+If no operation or function name is provided, an interactive wizard will guide you through the process.
+
+### Batch Deployment
+
+To deploy all Lambda functions at once:
+
+```bash
+povery-cli deploy [options]
+```
+
+Options:
+- `-y, --yes`: Automatically confirm all prompts
+- `-nc, --nocache`: Disable cache and force npm install
+- `-z, --environment <string>`: Target environment (default: 'dev')
+
+### Versioning
+
+To increment the version of all Lambda functions:
+
+```bash
+povery-cli version
+```
+
+This command:
+1. Creates a new version of the `$LATEST` Lambda function
+2. Sets the `dev` alias to point to `$LATEST`
+
+### Lambda Layers
+
+To upload a Lambda Layer:
+
+```bash
+povery-cli layers [functionName]
+```
+
+If no function name is provided, an interactive wizard will guide you through the process.
+
+### Promotion
+
+To promote Lambda functions between stages:
+
+```bash
+povery-cli promote [stage]
+```
+
+Available promotion paths:
+- `dev -> test`: Promotes from development to testing
+- `test -> prod`: Promotes from testing to production
+
+The promotion process:
+1. For `dev -> test`: Creates a new version and sets the `test` alias to that version
+2. For other stages: Copies the version from the source stage to the target stage
+
+### API Gateway Deployment
+
+To deploy API Gateway configurations:
+
+```bash
+povery-cli api
+```
+
+This command allows you to select a stage (dev, staging, prod) and deploys the API Gateway configuration for all Lambda functions.
 
 ## Environment Variables
 
