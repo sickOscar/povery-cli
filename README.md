@@ -1,30 +1,23 @@
 # Povery CLI
 
-#### [Povery](https://github.com/sickOscar/povery) is a framework for building things on AWS Lambda with Typescript
+## Overview
 
-This is the CLI for Povery. 
+[Povery](https://github.com/sickOscar/povery) is a framework for developing AWS Lambda functions with TypeScript. This CLI tool facilitates local development, testing, and deployment of serverless applications.
 
+Povery CLI enables developers to:
+- Locally serve multiple Lambda functions as an HTTP server
+- Invoke Lambda functions locally via terminal
+- Deploy Lambda functions to AWS environments
 
-You can easily serve locally many lambdas as an http server, or you can invoke them locally from the terminal. 
+Unlike other serverless frameworks, Povery CLI focuses exclusively on Lambda function management without infrastructure provisioning. This adheres to the principle of separation of concerns between application logic and infrastructure management.
 
-Unlike other things like this, it does not want to create lambdas or any kind of infrastructure 
-on AWS for you (just deploy them, if you wish). 
+## Technical Foundation
 
-We firmly believe on separation of concerns between code that handles application logic and code for infra.
-Mixing those things, it always gets messy at some point...
+The local development server functionality is built on top of the [Serverless Framework](https://github.com/serverless/serverless), leveraging its offline capabilities to simulate AWS Lambda and API Gateway locally. This integration provides a high-fidelity local development experience that closely mirrors the AWS production environment while maintaining a streamlined developer workflow.
 
+## Project Structure Requirements
 
-### General rules to follow to structure your project
-
-- Every lambda has a named folder under `lambda` folder.
-- The entrypoint of the lambda MUST BE `index.ts` file.
-- API Gateway MUST USE proxy integration to respond to api request.
-- Lambdas that serve API Gateway SHOULD BE prefixed with `API_` (e.g. `API_Something`) and start with a capital letter.
-- Lambdas that serve ant other events SHOULD BE prefixed with `EVENT_` (e.g. `EVENT_Something`) and start with a capital letter.
-
-### Project Structure
-
-As rules are clear, this cli needs a defined structure to work properly. The structure is as follows:
+The CLI requires a specific project structure:
 
 ```
 /<project_root>
@@ -36,55 +29,69 @@ As rules are clear, this cli needs a defined structure to work properly. The str
       event.json
   povery.json
 ```
-## Install
 
-If you want to install it globally, you can run:
+### Naming Conventions
 
-```bash
-npm i -g povery-cli
-```
+- All Lambda functions must reside in the `lambda/` directory
+- Each Lambda function requires `index.ts` as its entry point
+- API Gateway Lambda functions must:
+  - Use proxy integration for API requests
+  - Use the prefix `API_` (e.g., `API_UserService`)
+  - Start with a capital letter
+- Event-driven Lambda functions must:
+  - Use the prefix `EVENT_` (e.g., `EVENT_DataProcessor`)
+  - Start with a capital letter
 
-### Avoid global install
-A better choice is to install it locally on your project as a dev dependency, in which case you can run:
+## Installation
+
+### Local Installation (Recommended)
 
 ```bash
 npm i -D povery-cli
 ```
 
-In this case, you can add a script to your `package.json` file to run it:
+Add to your `package.json`:
 
 ```json
 {
   "scripts": {
-    "povery-cli": "povery-cli"
+    "povery": "povery-cli"
   }
 }
 ```
 
-And call it like this:
+Usage:
 ```bash
-npm run povery-cli
+npm run povery
 ```
 
-Just remeber that in this way, specific options to `povery-cli` must be passed after `--` 
+When passing options:
 ```bash
-npm run povery-cli function deploy API_Something  -- --stage dev
+npm run povery function deploy API_UserService -- --stage dev
 ```
 
-## Getting started
+### Global Installation
+
+```bash
+npm i -g povery-cli
+```
+
+## Usage
+
+### Command Reference
 
 ```bash
 povery-cli --help
 ```
 
-### Testing APIs on local machine
+### Local API Testing
 
-To start a local web server for testing, configure `povery.json` file with the routes you need.
-```
-// povery.json
+Configure routes in `povery.json`:
+
+```json
 {
   "lambdas": {
-    "API_Something": [
+    "API_UserService": [
       {
         "method": "ANY",
         "path": "/{proxy+}"
@@ -92,115 +99,130 @@ To start a local web server for testing, configure `povery.json` file with the r
     ]
   }
 }
-
 ```
-Then run:
+
+Start the local server:
 ```bash
 povery-cli start
 ```
 
-### Invoke a lambda locally
-It runs your ts code with the json file `event.json` in the lambda folder.
-```
-povery-cli function invoke EVENT_Something
-```
-## Imports and tsconfig.json
+### Local Lambda Invocation
 
-Working with shared code beteen your lambdas, you will want to add some kind of "common" folders outside of your `lambda` folder.
-Importing file into index.ts code with relative imports will break transpilations
+Execute a Lambda function with the `event.json` file in its directory:
+```bash
+povery-cli function invoke EVENT_DataProcessor
+```
+
+## Module Resolution
+
+When sharing code between Lambda functions, use TypeScript path aliases instead of relative imports:
 
 ```typescript
-// WRONG LAMBDA CODE on index.ts
-// THIS BREAKS STUFF
-import { Something } from '.../.../common/something.ts';
+// Incorrect - will break transpilation
+import { Something } from '../../common/something.ts';
+
+// Correct
+import { Something } from '@common/something.ts';
 ```
 
-You should instead use aliases and import external deps with them
+Configure `tsconfig.json` with appropriate path mappings:
 
-```typescript
-import { Something } from '@common/something.ts'
-```
-and configure your `tsconfig.json` properly like this
-```
-"compilerOptions": {
-    ...
-    "baseUrl": "./",
-    "paths": {
-        "@common/*": "common/*",
-        "povery": "node_modules/povery"
-    }
-    ...
-}
-```
-Note the path to `povery` needed to avoid misinterpretation of povery import from esbuild ts transpilation.
-## Configuration
-
-There are more options you can specify on your `povery.json` file:
-
-#### `deployStrategy`
-- `` (empty string): It will deploy your lambdas without any prefix or alias. Example: `API_Something`
-- `STAGE_PREFIX`: It will deploy your lambdas with the stage name as prefix. Example: `dev_API_Something`
-- `STAGE_ALIAS`: It will deploy your lambdas with the stage name as alias. Example: `API_Something:dev`
-
-#### `installScript`
-You can specify a script to run instead of the default `npm install` when building your lambdas.
-
-#### `esbuild`
-You can give specific configurations for esbuild stage, like this
 ```json
 {
-    "esbuild": {
-       "external": ["pg"]
+  "compilerOptions": {
+    "baseUrl": "./",
+    "paths": {
+      "@common/*": "common/*",
+      "povery": "node_modules/povery"
     }
+  }
 }
 ```
 
-This is particularly useful for excluding from bundling particular libreries that you want to put on a Lambda Layer,
-for example libraries that gives compilation errors or libraries that have dynamic imports) o big libraries 
-that makes your index file huge and slows down cold starts.
+The explicit `povery` path mapping prevents esbuild transpilation issues.
 
+## Configuration Options
 
-## Deploying
+The `povery.json` file supports the following configuration options:
 
-You can deploy any lambda or all of them at once. 
+### `deployStrategy`
 
-To deploy a single lambda, you can follow the wizard once you enter
+- `""` (empty string): Deploys Lambda functions without prefix or alias (e.g., `API_UserService`)
+- `STAGE_PREFIX`: Deploys with stage name as prefix (e.g., `dev_API_UserService`)
+- `STAGE_ALIAS`: Deploys with stage name as alias (e.g., `API_UserService:dev`)
 
+### `installScript`
+
+Specifies a custom script to run instead of the default `npm install` during Lambda build.
+
+### `esbuild`
+
+Provides configuration options for esbuild:
+
+```json
+{
+  "esbuild": {
+    "external": ["pg"]
+  }
+}
+```
+
+This is particularly useful for:
+- Excluding libraries that should be deployed as Lambda Layers
+- Handling libraries with compilation errors or dynamic imports
+- Optimizing large dependencies that could impact cold start performance
+
+## Deployment
+
+### Single Lambda Deployment
+
+Interactive mode:
 ```bash
 povery-cli function
 ```
-Or, if you know exaclty the name of the lambda you need to deploy, you can run:
+
+Direct deployment:
 ```bash
 povery-cli function deploy <lambda_name>
 ```
 
-To deploy all of your lambdas, you can run:
+### Batch Deployment
+
+Deploy all Lambda functions (ideal for CI/CD pipelines):
 ```bash
 povery-cli deploy
 ```
-This is particularly useful for CI/CD pipelines.
 
-### Notes for building
-By default, povery.cli will minify your code and will produce a single file and a source map. This is for performance reasons, because it will be order of magnitudes farter to execute the code, in particular during cold starts. The stack traces may result unreadable, but you can actually enable the source maps generated by enabling them via env variable. To do so, add this env variable to your lambda:
+## Build Optimization
+
+By default, Povery CLI:
+- Minifies code
+- Produces a single file with source map
+- Optimizes for cold start performance
+
+### Source Map Support
+
+Enable source maps for debugging by adding this environment variable to your Lambda:
 ```
 NODE_OPTIONS=--enable-source-maps
 ```
-Note that this can cause a performance hit, so it's not very recommended to use it in production. We suggest to use an error tracking software like Sentry and to upload source maps there.
 
-### .gitignore file
+Note: This may impact performance and is not recommended for production environments. Consider using error tracking services like Sentry with uploaded source maps instead.
 
-Please add this to your `.gitignore` file:
+## Environment Variables
+
+Create a `.envrc` file in your project root to define environment variables. All exported variables will be available during local Lambda execution.
+
+## Version Control
+
+Add the following to your `.gitignore` file:
 ```
 .serverless.*
 ```
 
-### env variables
-There should be a `.envrc` file in the root of your project, defining the env variables for the project. Every exported variable in this file will be available to the execution of your local lambdas.
-
-
 ## Contributing
 
-Feel free to open issues and PRs. We will be happy to review them.
+Contributions are welcome. Please feel free to submit issues and pull requests.
 
 ## License
 
