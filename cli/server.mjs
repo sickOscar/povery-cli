@@ -47,7 +47,7 @@ function getPoveryConfig(options = {}) {
 
     if (poveryConf.auth) {
         functions["CustomOfflineAuthorizer"] = {
-            handler: `node_modules/povery/cli/offlineAuthorizer.handler`,
+            handler: `node_modules/povery-cli/cli/offlineAuthorizer.handler`,
             runtime: "nodejs16.x",
         }
     }
