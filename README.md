@@ -112,6 +112,22 @@ Configure routes in `povery.json`:
 }
 ```
 
+**On Authorization**: for lambdas that needs Authentication and Authorization, you must add the `"authorized": true` field for the specific method call, like in the following example
+
+```json
+{
+  "lambdas": {
+    "API_UserService": [
+      {
+        "method": "ANY",
+        "path": "/{proxy+}"
+        "authorized": true
+      }
+    ]
+  }
+}
+```
+
 Start the local server:
 ```bash
 povery-cli start
