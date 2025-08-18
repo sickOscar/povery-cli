@@ -43,6 +43,30 @@ The CLI requires a specific project structure:
 - Event-driven Lambda functions must:
   - Use the prefix `EVENT_` (e.g., `EVENT_DataProcessor`)
   - Start with a capital letter
+ 
+### Example tsconfig 
+
+```
+{
+	"compilerOptions": {
+		"target": "es2020",
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
+		"module": "commonjs",
+		"moduleResolution": "node",
+		"baseUrl": "./",
+		"outDir": "./build",
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"strict": true,
+		"skipLibCheck": true,
+		"allowJs": true, // this is to allow custom authorizer
+		"paths": {
+			"povery": ["node_modules/povery"]
+		}
+	},
+}
+```
 
 ## Installation
 
