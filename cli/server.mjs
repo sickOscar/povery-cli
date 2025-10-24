@@ -67,6 +67,8 @@ function getPoveryConfig(options = {}) {
                 "reloadHandler": true,
                 //"timeout": options.timeout || 30
                 "noTimeout": true,
+                "httpPort": options.port || 3000,
+                "host": options.host || 'localhost'
             },
             "serverlessPluginTypescript": {
                 tsConfigFileLocation: './tsconfig.json'
