@@ -65,7 +65,8 @@ function getPoveryConfig(options = {}) {
             "serverless-offline": {
                 // "useChildProcesses": true,
                 "reloadHandler": true,
-                "timeout": options.timeout || 30
+                //"timeout": options.timeout || 30
+                "noTimeout": true,
             },
             "serverlessPluginTypescript": {
                 tsConfigFileLocation: './tsconfig.json'

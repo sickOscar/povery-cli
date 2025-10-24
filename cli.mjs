@@ -29,9 +29,13 @@ const start = program
     .command('start')
     .description('Starts the lambda server with serverless-offline')
     .option('-t, --timeout <seconds>', 'Lambda timeout in seconds', '30')
+    .option('-p, --http-port <port>', 'HTTP Port for the server', '3000')
+    .option('-h, --host <string>', 'Host to bind the server', 'localhost') 
     .action((options) => {
         startServer({
-            timeout: parseInt(options.timeout, 10)
+            timeout: parseInt(options.timeout, 10),
+            httpPort: parseInt(options.httpPort || '3000', 10),
+            host: options.host || 'localhost',
         });
     });
 
